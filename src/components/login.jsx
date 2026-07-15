@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { BASE, apiFirebaseLogin } from '../api/api';
@@ -23,25 +23,78 @@ function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  // Firebase Google sign-in (lazy-loaded so the app runs even before `firebase` is installed).
+  // Handle the return trip from a full-page Google redirect (used on mobile).
+  useEffect(() => {
+    if (!firebaseConfigured) return;
+    (async () => {
+      try {
+        const { initializeApp, getApps } = await import("firebase/app");
+        const { getAuth, getRedirectResult } = await import("firebase/auth");
+        const app = getApps().length ? getApps()[0] : initializeApp(FB);
+        const auth = getAuth(app);
+        const result = await getRedirectResult(auth);
+        if (result && result.user) {
+          setGoogleBusy(true);
+          const role = sessionStorage.getItem("tcims_google_role") || "Tourist";
+          sessionStorage.removeItem("tcims_google_role");
+          const idToken = await result.user.getIdToken();
+          const data = await apiFirebaseLogin(idToken, role);
+          login(data.user);
+          navigate('/dashboard');
+        }
+      } catch (err) {
+        setError(err.message || 'Google sign-in failed');
+        setGoogleBusy(false);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Firebase Google sign-in (lazy-loaded). On phones we use a full-page redirect because
+  // mobile browsers block popups; on desktop we use a popup, falling back to redirect if blocked.
   // `role` is the account type chosen in the picker; it only applies when the account is new.
   const handleGoogle = async (role) => {
     setRoleModal(false);
     setError(''); setGoogleBusy(true);
     try {
       const { initializeApp, getApps } = await import("firebase/app");
-      const { getAuth, GoogleAuthProvider, signInWithPopup } = await import("firebase/auth");
+      const { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect } = await import("firebase/auth");
       const app = getApps().length ? getApps()[0] : initializeApp(FB);
       const auth = getAuth(app);
-      const result = await signInWithPopup(auth, new GoogleAuthProvider());
+      const provider = new GoogleAuthProvider();
+      const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches;
+
+      if (isMobile) {
+        sessionStorage.setItem("tcims_google_role", role); // survive the full-page redirect
+        await signInWithRedirect(auth, provider);
+        return; // page navigates away; result handled by the effect above on return
+      }
+
+      const result = await signInWithPopup(auth, provider);
       const idToken = await result.user.getIdToken();
       const data = await apiFirebaseLogin(idToken, role);
       login(data.user);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.message || 'Google sign-in failed');
-    } finally {
-      setGoogleBusy(false);
+      const code = err?.code || "";
+      if (code === "auth/popup-blocked") {
+        try {
+          const { getApps } = await import("firebase/app");
+          const { getAuth, GoogleAuthProvider, signInWithRedirect } = await import("firebase/auth");
+          const auth = getAuth(getApps()[0]);
+          sessionStorage.setItem("tcims_google_role", role);
+          await signInWithRedirect(auth, new GoogleAuthProvider());
+          return;
+        } catch (e2) {
+          setError(e2.message || 'Google sign-in failed');
+          setGoogleBusy(false);
+        }
+      } else if (code !== "auth/popup-closed-by-user" && code !== "auth/cancelled-popup-request") {
+        setError(err.message || 'Google sign-in failed');
+        setGoogleBusy(false);
+      } else {
+        setGoogleBusy(false);
+      }
     }
   };
 
