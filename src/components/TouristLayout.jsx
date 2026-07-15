@@ -4,11 +4,13 @@ import { useAuth } from "../context/AuthContext";
 import { apiList } from "../api/api";
 import { toast } from "../utils/toast";
 import { EVENTS_SEEN_KEY } from "./TouristEvents";
+import AccountModal from "./AccountModal";
 
 export default function TouristLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [newEvents, setNewEvents] = useState(0);
+  const [showAccount, setShowAccount] = useState(false);
 
   const handleLogout = () => { logout(); localStorage.removeItem("user"); navigate("/login"); };
 
@@ -69,6 +71,7 @@ export default function TouristLayout() {
 
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <span style={{ color: "#fff", fontSize: 14 }}>{user?.username || "Tourist"}</span>
+            <button style={acctBtn} onClick={() => setShowAccount(true)}>Account</button>
             <button style={logoutBtn} onClick={handleLogout}>Logout</button>
           </div>
         </div>
@@ -77,6 +80,8 @@ export default function TouristLayout() {
       <main style={content}>
         <Outlet />
       </main>
+
+      {showAccount && <AccountModal user={user} onClose={() => setShowAccount(false)} />}
     </div>
   );
 }
@@ -89,4 +94,5 @@ const navItem = { display: "flex", alignItems: "center", gap: 6, color: "rgba(25
 const navActive = { background: "rgba(255,255,255,0.2)", color: "#fff", fontWeight: 700 };
 const badge = { position: "absolute", top: -4, right: -4, minWidth: 18, height: 18, padding: "0 5px", background: "#f59e0b", color: "#1f2937", borderRadius: 999, fontSize: 11, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 0 2px #2563eb" };
 const logoutBtn = { background: "rgba(255,255,255,0.2)", color: "#fff", border: "none", borderRadius: 8, padding: "8px 14px", fontSize: 14, cursor: "pointer" };
+const acctBtn = { background: "rgba(255,255,255,0.14)", color: "#fff", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 8, padding: "8px 14px", fontSize: 14, cursor: "pointer" };
 const content = { maxWidth: 1140, margin: "0 auto", padding: "28px 24px" };

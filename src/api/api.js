@@ -129,5 +129,13 @@ export async function apiFirebaseLogin(idToken, role = "Tourist") {
     body: JSON.stringify({ idToken, role })
   }));
 }
+// ---- Set / change the logged-in user's password ----
+export async function apiSetPassword(password) {
+  return handle(await fetch(`${BASE}/set_password.php`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ password })
+  }));
+}
 
 export { BASE, HOST };
