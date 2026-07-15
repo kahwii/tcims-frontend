@@ -123,10 +123,10 @@ export async function apiGoogleLogin(credential) {
   }));
 }
 // ---- Firebase sign-in (verifies the Firebase ID token server-side) ----
-export async function apiFirebaseLogin(idToken) {
+export async function apiFirebaseLogin(idToken, role = "Tourist") {
   return handle(await fetch(`${BASE}/firebase_login.php`, {
     method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ idToken })
+    body: JSON.stringify({ idToken, role })
   }));
 }
 

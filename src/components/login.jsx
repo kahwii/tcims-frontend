@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { BASE, apiFirebaseLogin } from '../api/api';
+import Icon from './Icon';
 
 // Firebase web config (from .env). Google sign-in shows only when configured.
 const FB = {
@@ -18,11 +19,14 @@ function Login() {
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [googleBusy, setGoogleBusy] = useState(false);
+  const [roleModal, setRoleModal] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
   // Firebase Google sign-in (lazy-loaded so the app runs even before `firebase` is installed).
-  const handleGoogle = async () => {
+  // `role` is the account type chosen in the picker; it only applies when the account is new.
+  const handleGoogle = async (role) => {
+    setRoleModal(false);
     setError(''); setGoogleBusy(true);
     try {
       const { initializeApp, getApps } = await import("firebase/app");
@@ -31,7 +35,7 @@ function Login() {
       const auth = getAuth(app);
       const result = await signInWithPopup(auth, new GoogleAuthProvider());
       const idToken = await result.user.getIdToken();
-      const data = await apiFirebaseLogin(idToken);
+      const data = await apiFirebaseLogin(idToken, role);
       login(data.user);
       navigate('/dashboard');
     } catch (err) {
@@ -78,7 +82,7 @@ function Login() {
 
           {/* Google Sign-In via Firebase */}
           {firebaseConfigured ? (
-            <button type="button" style={googleBtn} onClick={handleGoogle} disabled={googleBusy}>
+            <button type="button" style={googleBtn} onClick={() => setRoleModal(true)} disabled={googleBusy}>
               <svg width="18" height="18" viewBox="0 0 48 48" style={{ flexShrink: 0 }}>
                 <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.4 29.3 35 24 35c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 5.1 29.5 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21c10.5 0 20-7.6 20-21 0-1.2-.1-2.3-.4-3.5z"/>
                 <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 19 13 24 13c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 5.1 29.5 3 24 3 16 3 9.1 7.6 6.3 14.7z"/>
@@ -129,6 +133,38 @@ function Login() {
            {new Date().getFullYear()} City of Mandaluyong — CCAT
         </div>
       </div>
+
+      {/* Account-type picker for Google sign-in */}
+      {roleModal && (
+        <div style={overlay} onClick={() => setRoleModal(false)}>
+          <div style={roleCard} onClick={(e) => e.stopPropagation()}>
+            <h2 style={{ margin: "0 0 4px", fontSize: 20, color: "#0f172a", textAlign: "center" }}>Continue as</h2>
+            <p style={{ margin: "0 0 20px", fontSize: 14, color: "#6b7280", textAlign: "center" }}>Choose the type of account to sign in with Google.</p>
+
+            <button style={roleOption} onClick={() => handleGoogle("Tourist")}>
+              <div style={{ ...roleIcon, background: "#eff6ff", color: "#2563eb" }}>
+                <Icon name="pin" size={22} />
+              </div>
+              <div style={{ textAlign: "left" }}>
+                <div style={roleTitle}>Tourist</div>
+                <div style={roleDesc}>Explore places, check in, and leave reviews.</div>
+              </div>
+            </button>
+
+            <button style={{ ...roleOption, marginTop: 12 }} onClick={() => handleGoogle("Establishment")}>
+              <div style={{ ...roleIcon, background: "#fef3c7", color: "#b45309" }}>
+                <Icon name="store" size={22} />
+              </div>
+              <div style={{ textAlign: "left" }}>
+                <div style={roleTitle}>Establishment</div>
+                <div style={roleDesc}>Apply for accreditation and upload requirements.</div>
+              </div>
+            </button>
+
+            <button style={roleCancel} onClick={() => setRoleModal(false)}>Cancel</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -160,5 +196,14 @@ const forgot = { color: "#2563eb", fontSize: 13, fontWeight: 600, textDecoration
 
 const signInBtn = { width: "100%", background: "linear-gradient(135deg,#2563eb,#1d4ed8)", color: "#fff", border: "none", borderRadius: 10, padding: "13px", fontSize: 15, fontWeight: 700, cursor: "pointer", boxShadow: "0 6px 16px rgba(37,99,235,0.30)" };
 const footer = { textAlign: "center", marginTop: 18, fontSize: 14, color: "#6b7280" };
+
+/* role picker modal */
+const overlay = { position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 60, padding: 20 };
+const roleCard = { background: "#fff", borderRadius: 18, padding: 26, width: 400, maxWidth: "100%", boxShadow: "0 20px 50px rgba(2,6,23,0.25)" };
+const roleOption = { width: "100%", display: "flex", alignItems: "center", gap: 14, background: "#fff", border: "1px solid #e6ecf5", borderRadius: 12, padding: "14px 16px", cursor: "pointer", textAlign: "left" };
+const roleIcon = { width: 44, height: 44, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 };
+const roleTitle = { fontSize: 16, fontWeight: 700, color: "#0f172a" };
+const roleDesc = { fontSize: 12.5, color: "#6b7280", marginTop: 2 };
+const roleCancel = { width: "100%", marginTop: 16, background: "#f1f5f9", border: "none", borderRadius: 10, padding: "11px", fontSize: 14, fontWeight: 600, color: "#374151", cursor: "pointer" };
 
 export default Login;
