@@ -210,12 +210,12 @@ const pageSub = { margin: "0 0 24px", color: "#6b7280", fontSize: "15px" };
 const emptyTxt = { color: "#9ca3af", fontSize: 14, padding: "20px 0", textAlign: "center" };
 const retryBtn = { marginTop: 10, background: "#2563eb", color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", cursor: "pointer", fontSize: 13 };
 
-const kpiGrid = { display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: "20px", marginBottom: "24px" };
+const kpiGrid = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: "20px", marginBottom: "24px" };
 const kpiCard = { position: "relative", background: "#fff", padding: "22px", borderRadius: "16px", border: "1px solid #eef2f8", boxShadow: "0 1px 3px rgba(15,23,42,0.04)", display: "flex", flexDirection: "column", overflow: "hidden" };
 const kpiAccent = { position: "absolute", top: 0, left: 0, right: 0, height: "3px" };
 const kpiIcon = { width: "44px", height: "44px", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 };
 
-const chartGrid = { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "20px", marginBottom: "24px", alignItems: "stretch" };
+const chartGrid = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "20px", marginBottom: "24px", alignItems: "stretch" };
 const card = { background: "#fff", padding: "22px", borderRadius: "16px", border: "1px solid #eef2f8", boxShadow: "0 1px 3px rgba(15,23,42,0.04)", marginBottom: "20px" };
 const cardHeader = { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "18px" };
 const cardTitle = { margin: 0, fontSize: "17px", fontWeight: 700, color: "#111827", letterSpacing: "-0.2px" };

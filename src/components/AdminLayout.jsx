@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { NavLink, useLocation, useNavigate, Outlet } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Icon from "./Icon";
@@ -8,7 +8,24 @@ export default function AdminLayout() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  // Mobile detection (phones/tablets ≤ 768px). Desktop layout is unchanged.
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches
+  );
+  // Sidebar starts open on desktop, closed on mobile.
+  const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 768px)");
+    const onChange = (e) => { setIsMobile(e.matches); setSidebarOpen(!e.matches); };
+    if (mq.addEventListener) mq.addEventListener("change", onChange);
+    else mq.addListener(onChange);
+    return () => {
+      if (mq.removeEventListener) mq.removeEventListener("change", onChange);
+      else mq.removeListener(onChange);
+    };
+  }, []);
+
   const [openGroups, setOpenGroups] = useState({
     "Tourism Directory": location.pathname.startsWith("/admin/tourism")
       || ["/admin/tourist-spots", "/admin/restaurants", "/admin/hotels", "/admin/tourism-businesses"]
@@ -17,6 +34,9 @@ export default function AdminLayout() {
 
   const toggleGroup = (label) =>
     setOpenGroups(g => ({ ...g, [label]: !g[label] }));
+
+  // On mobile, tapping a link should close the drawer.
+  const closeOnMobile = () => { if (isMobile) setSidebarOpen(false); };
 
   const handleLogout = () => {
     logout();
@@ -44,11 +64,25 @@ export default function AdminLayout() {
     { label: "User Management", icon: "users", to: "/admin/users" }
   ];
 
+  // Sidebar styling differs by device: desktop = in-flow collapsible column;
+  // mobile = fixed slide-in drawer over the content.
+  const sidebarStyle = isMobile
+    ? { ...sidebarBase, position: "fixed", top: 0, left: 0, height: "100vh", width: 262,
+        zIndex: 50, transform: sidebarOpen ? "translateX(0)" : "translateX(-100%)",
+        transition: "transform 0.25s ease" }
+    : { ...sidebarBase, position: "sticky", top: 0, height: "100vh",
+        width: sidebarOpen ? 260 : 0, transition: "width 0.25s ease" };
+
   return (
     <div style={layout}>
 
+      {/* Mobile backdrop */}
+      {isMobile && sidebarOpen && (
+        <div style={backdrop} onClick={() => setSidebarOpen(false)} />
+      )}
+
       {/* ================= SIDEBAR ================= */}
-      <aside style={{ ...sidebar, width: sidebarOpen ? 260 : 0 }}>
+      <aside style={sidebarStyle}>
         <div style={brand}>
           <img
             src="/mandaluyong-logo.png"
@@ -72,6 +106,7 @@ export default function AdminLayout() {
                   key={item.label}
                   to={item.to}
                   end={item.to === "/admin"}
+                  onClick={closeOnMobile}
                   style={({ isActive }) => ({ ...navItem, ...(isActive ? navItemActive : {}) })}
                 >
                   <Icon name={item.icon} size={18} />
@@ -93,6 +128,7 @@ export default function AdminLayout() {
                       <NavLink
                         key={child.label}
                         to={child.to}
+                        onClick={closeOnMobile}
                         style={({ isActive }) => ({ ...subItem, ...(isActive ? navItemActive : {}) })}
                       >
                         <Icon name={child.icon} size={16} />
@@ -111,23 +147,27 @@ export default function AdminLayout() {
       <main style={main}>
         <div style={topbar}>
           <button style={toggleBtn} onClick={() => setSidebarOpen(o => !o)}><Icon name="menu" size={18} /></button>
-          <div style={searchBox}>
-            <span style={{ color: "#94a3b8", display: "inline-flex" }}><Icon name="search" size={16} /></span>
-            <input style={searchInput} placeholder="Search tourist spots, events, establishments..." />
-          </div>
+          {!isMobile && (
+            <div style={searchBox}>
+              <span style={{ color: "#94a3b8", display: "inline-flex" }}><Icon name="search" size={16} /></span>
+              <input style={searchInput} placeholder="Search tourist spots, events, establishments..." />
+            </div>
+          )}
           <div style={topRight}>
             <div style={userBox}>
               <div style={avatar}>{(user?.username || "S").charAt(0).toUpperCase()}</div>
-              <div>
-                <div style={{ fontWeight: 600, fontSize: 14 }}>{user?.username || "Super Admin"}</div>
-                <div style={{ fontSize: 12, color: "#6b7280" }}>Super Admin</div>
-              </div>
+              {!isMobile && (
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: 14 }}>{user?.username || "Super Admin"}</div>
+                  <div style={{ fontSize: 12, color: "#6b7280" }}>Super Admin</div>
+                </div>
+              )}
             </div>
             <button style={logoutBtn} onClick={handleLogout}>Logout</button>
           </div>
         </div>
 
-        <div style={content}>
+        <div style={isMobile ? contentMobile : content}>
           <Outlet />
         </div>
       </main>
@@ -138,7 +178,8 @@ export default function AdminLayout() {
 /* ================= SHARED STYLES ================= */
 const layout = { display: "flex", minHeight: "100vh", fontFamily: "'Inter', 'Segoe UI', sans-serif", background: "#f8fafc" };
 
-const sidebar = { background: "#ffffff", borderRight: "1px solid #e6ecf5", boxShadow: "2px 0 10px rgba(0,0,0,0.04)", display: "flex", flexDirection: "column", overflow: "hidden", transition: "width 0.25s ease", flexShrink: 0, position: "sticky", top: 0, height: "100vh" };
+const sidebarBase = { background: "#ffffff", borderRight: "1px solid #e6ecf5", boxShadow: "2px 0 10px rgba(0,0,0,0.04)", display: "flex", flexDirection: "column", overflow: "hidden", flexShrink: 0 };
+const backdrop = { position: "fixed", inset: 0, background: "rgba(15,23,42,0.45)", zIndex: 40 };
 const brand = { display: "flex", alignItems: "center", gap: "12px", padding: "20px 18px", borderBottom: "1px solid #eef2f8" };
 const brandIcon = { width: "44px", height: "44px", borderRadius: "12px", background: "#1d4ed8", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: "22px" };
 const brandTitle = { fontWeight: 700, fontSize: "18px", color: "#111827" };
@@ -164,3 +205,4 @@ const userBox = { display: "flex", alignItems: "center", gap: "10px" };
 const avatar = { width: "38px", height: "38px", borderRadius: "50%", background: "#2563eb", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700 };
 const logoutBtn = { padding: "8px 14px", background: "#dc2626", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer", fontSize: "14px" };
 const content = { padding: "24px 32px" };
+const contentMobile = { padding: "16px 14px" };

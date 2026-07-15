@@ -91,3 +91,15 @@ code {
   to { opacity: 1; transform: translateY(0); }
 }
 .fade-up { animation: tcimsFadeUp 0.35s ease both; }
+
+/* Mobile: let wide data tables scroll sideways instead of overflowing the page.
+   Desktop (>768px) is unaffected. */
+@media (max-width: 768px) {
+  table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+  }
+}
